@@ -101,7 +101,7 @@ nav{display:flex;background:#ffffff1a;border-radius:12px;padding:4px;gap:4px}
 .float{position:absolute;font-weight:700;font-size:26px;color:var(--ok);font-family:var(--font-kid);animation:up 1.4s ease-out forwards}
 .floatemo{position:absolute;font-size:40px;animation:up 1.6s ease-out forwards}
 @keyframes up{to{transform:translateY(-90px);opacity:0}}
-#toast{position:fixed;left:50%;top:76px;transform:translateX(-50%) scale(.6);opacity:0;z-index:60;background:#fff;border-radius:22px;padding:14px 26px;font-size:23px;font-weight:700;font-family:var(--font-kid);color:var(--navy);box-shadow:0 12px 40px #0a183340;border:4px solid var(--sun);transition:all .3s cubic-bezier(.2,.9,.3,1.4);white-space:nowrap}
+#toast{position:fixed;left:50%;top:120px;transform:translateX(-50%) scale(.6);opacity:0;z-index:60;background:#fff;border-radius:22px;padding:14px 26px;font-size:23px;font-weight:700;font-family:var(--font-kid);color:var(--navy);box-shadow:0 12px 40px #0a183340;border:4px solid var(--sun);transition:all .3s cubic-bezier(.2,.9,.3,1.4);white-space:nowrap}
 #toast.on{opacity:1;transform:translateX(-50%) scale(1)}
 /* ---------- PIN ---------- */
 #pin{position:fixed;inset:0;background:#081739cc;display:none;place-items:center;z-index:70;backdrop-filter:blur(4px)}
@@ -278,7 +278,7 @@ const speciesOf=p=>p.species||(/dog|pup/i.test(p.persona)?'dog':/cat|kitt/i.test
 
 /* ---------------- tabs + PIN ---------------- */
 function show(t){view=t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t==t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==t));
- if(t=='parent'){fillParent();live()} if(t=='proof')proof(); if(t=='kid')setTimeout(fit,0)}
+ $(t).scrollTop=0;if(t=='parent'){fillParent();live()} if(t=='proof')proof(); if(t=='kid')setTimeout(fit,0)}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>b.dataset.t=='parent'&&!TOK?openPin():show(b.dataset.t));
 let pinBuf='';
 function openPin(){pinBuf='';drawPin();$('pin').classList.add('on')}
@@ -476,7 +476,7 @@ async function proof(){const p=await api('/api/proof'),lv=p.log.filter(l=>l.id&&
  const avg=lv.length?lv.reduce((a,l)=>a+(+l.cost||0),0)/lv.length:0,month=avg*6*30;
  $('nums').innerHTML=[[lv.length,'live model calls'],['$'+p.live_cost.toFixed(4),'total live cost (cap $'+p.cap+')'],['$'+avg.toFixed(5),'average per call'],[hits,'cached replays at $0']].map(([v,l])=>`<div class="card num"><b>${v}</b><small>${l}</small></div>`).join('');
  $('month').innerHTML=`<h2>A month of daily sessions for under $1</h2><div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><span style="font-family:var(--font-display);font-size:56px;color:var(--navy)">$${month.toFixed(2)}</span><span class="muted">= $${avg.toFixed(5)} average per call × 6 calls per session (5 turns + parent summary) × 30 days. Key usage before $${(+p.key_before||0).toFixed(4)} · after $${(+p.key_after||0).toFixed(4)}.</span></div>`;
- $('plog').innerHTML=p.log.slice(-14).reverse().map(l=>`<tr><td class="m">${esc(l.id||'keyword redirect (no call)')}</td><td class="m">${esc(l.model)}</td><td>${esc(l.tokens)}</td><td>${l.local?'$0 local':'$'+(+l.cost||0).toFixed(5)}</td><td>${l.cache_hit?'cached replay, $0':l.local?'local model':l.id?'live':'safety pre-check'}</td></tr>`).join('')}
+ $('plog').innerHTML=[...lv.slice().reverse(),...p.log.filter(l=>!l.id).slice(-1),...p.log.filter(l=>l.cache_hit).slice(-3).reverse()].map(l=>`<tr><td class="m">${esc(l.id||'keyword redirect (no call)')}</td><td class="m">${esc(l.model)}</td><td>${esc(l.tokens)}</td><td>${l.local?'$0 local':'$'+(+l.cost||0).toFixed(5)}</td><td>${l.cache_hit?'cached replay, $0':l.local?'local model':l.id?'live':'safety pre-check'}</td></tr>`).join('')}
 
 (async()=>{const r=await api('/api/settings');S=r.settings;PR=r.profile;RT=r.runtime||null;await refreshTasks();initScene();renderKid();
  bubble('bot','<span class="who">'+esc(PR.name)+'</span>Hi '+esc(kid())+'! Tap a question, press 🎤 to talk, or type.');})();
