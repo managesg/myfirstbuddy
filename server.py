@@ -3,13 +3,17 @@ import json, os, re, sys, time, hashlib, subprocess, secrets, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 R = os.path.dirname(os.path.abspath(__file__))
 P = lambda *a: os.path.join(R, *a)
-MODEL = "meta/muse-ember"
+# any OpenAI-compatible endpoint: OpenRouter (default, Muse Ember) or a local server (Ollama, LM Studio, llama.cpp)
+BASE = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+MODEL = os.environ.get("LLM_MODEL", "meta/muse-ember")
+OPENROUTER = "openrouter.ai" in BASE
 CAP = 0.40  # hard cap on NEW spend
 UNSAFE = re.compile(r"address|phone|where do you live|password|kill|gun|sex|secret|hurt", re.I)
 REDIRECT = "I can't help with that one, Mia. Let's ask a grown-up together! Want to hear about space or animals instead?"
 
 def key():
-    k = os.environ.get("OPENROUTER_API_KEY")
+    k = os.environ.get("LLM_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
+    if not OPENROUTER: return k or ""
     if not k:
         k = subprocess.run(["powershell", "-NoProfile", "-Command",
             "[Environment]::GetEnvironmentVariable('OPENROUTER_API_KEY','User')"], capture_output=True, text=True).stdout.strip()
@@ -50,22 +54,26 @@ def parse(txt):
         if m: return {"reply": m.group(1), "mission": None, "topic": "", "safety_flag": None, "learning_note": ""}
         return None
 
+def ckey(messages):  # default Muse Ember keeps the original key so the committed cache still replays
+    return hashlib.sha256(json.dumps(messages if OPENROUTER and MODEL == "meta/muse-ember" else [BASE, MODEL, messages], sort_keys=True).encode()).hexdigest()
+
 def llm(messages):
     """cache-first; calls are sequential (client awaits each reply)."""
-    h = hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()
-    cp = P("cache", h + ".json")
+    cp = P("cache", ckey(messages) + ".json")
     if os.path.exists(cp):
         c = json.load(open(cp, encoding="utf-8"))
         logline({"ts": time.time(), "id": c.get("id"), "model": MODEL, "tokens": c.get("usage", {}).get("total_tokens"), "cost": 0, "cache_hit": True})
         return c
-    guard()
-    body = json.dumps({"model": MODEL, "messages": messages, "temperature": 0.4, "max_tokens": 1200, "reasoning": {"effort": "low"}, "usage": {"include": True}}).encode()
-    req = urllib.request.Request("https://openrouter.ai/api/v1/chat/completions", body,
-        {"Authorization": "Bearer " + key(), "Content-Type": "application/json"})
+    if OPENROUTER: guard()
+    b = {"model": MODEL, "messages": messages, "temperature": 0.4, "max_tokens": 1200}
+    if OPENROUTER: b.update({"reasoning": {"effort": "low"}, "usage": {"include": True}})  # OpenRouter-only fields
+    hd = {"Content-Type": "application/json"}
+    if key(): hd["Authorization"] = "Bearer " + key()
+    req = urllib.request.Request(BASE + "/chat/completions", json.dumps(b).encode(), hd)
     t0 = time.time()
     c = json.load(urllib.request.urlopen(req, timeout=60))
     u = c.get("usage", {})
-    logline({"ts": t0, "id": c.get("id"), "model": c.get("model", MODEL), "tokens": u.get("total_tokens"), "cost": u.get("cost"), "latency_s": round(time.time() - t0, 2), "cache_hit": False})
+    logline({"ts": t0, "id": c.get("id"), "model": c.get("model", MODEL), "tokens": u.get("total_tokens"), "cost": u.get("cost") if OPENROUTER else 0, "local": not OPENROUTER, "latency_s": round(time.time() - t0, 2), "cache_hit": False})
     json.dump(c, open(cp, "w", encoding="utf-8"))
     return c
 
@@ -96,8 +104,7 @@ def chat(text, wind):
         for _ in range(2):
             c = llm(msgs); out = parse(c["choices"][0]["message"]["content"] or "")
             if out: break
-            h = hashlib.sha256(json.dumps(msgs, sort_keys=True).encode()).hexdigest()
-            if os.path.exists(P("cache", h + ".json")): os.remove(P("cache", h + ".json"))  # never cache unparseable output
+            if os.path.exists(P("cache", ckey(msgs) + ".json")): os.remove(P("cache", ckey(msgs) + ".json"))  # never cache unparseable output
         out = out or {"reply": "Hmm, let's try that again!", "mission": None, "topic": "", "safety_flag": None, "learning_note": ""}
     if turn % 3 == 0 and not out.get("mission"): out["mission"] = "Draw what we talked about and show a grown-up!"
     hist += [{"role": "user", "content": text}, {"role": "assistant", "content": out["reply"]}]
@@ -147,7 +154,8 @@ class H(BaseHTTPRequestHandler):
     def authed(self): return self.headers.get("X-Parent-Token") in TOKENS
     def do_GET(self):
         if self.path.split("?")[0] == "/": return self.send(open(P("index.html"), "rb").read(), ct="text/html; charset=utf-8")
-        if self.path == "/api/settings": return self.send({"settings": {k: v for k, v in rj("data/settings.json", {}).items() if not k.startswith("pin_")}, "profile": rj("data/profile.json", {})})
+        if self.path == "/api/settings": return self.send({"settings": {k: v for k, v in rj("data/settings.json", {}).items() if not k.startswith("pin_")}, "profile": rj("data/profile.json", {}),
+            "runtime": {"model": MODEL, "openrouter": OPENROUTER, "local": not OPENROUTER}})
         if self.path == "/api/proof": return self.send(proof())
         if self.path == "/api/summaries":
             if not self.authed(): return self.send({"error": "parent PIN required"}, 401)

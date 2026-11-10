@@ -23,8 +23,16 @@ python record.py video            # needs playwright + chrome; replays cached tu
 ```
 Python stdlib only. The key is read server-side from the environment (or Windows user env) and is never sent to the browser or committed.
 
+## Run on a local device (toys, kiosks, learning centres)
+Any OpenAI-compatible server works; nothing leaves the device. Default stays Muse Ember via OpenRouter.
+```
+ollama pull llama3.2
+set LLM_BASE_URL=http://localhost:11434/v1 && set LLM_MODEL=llama3.2 && python server.py
+```
+Env: `LLM_BASE_URL` (default `https://openrouter.ai/api/v1`), `LLM_MODEL` (default `meta/muse-ember`), `LLM_API_KEY` (default `OPENROUTER_API_KEY`). LM Studio (`http://localhost:1234/v1`) and llama.cpp server work the same way. OpenRouter-only fields (`usage.include`, `reasoning`) are sent only to OpenRouter; local calls are logged as `$0 local`. The parent area shows which model is active.
+
 ## API
-`GET /api/settings` (no PIN fields) | `POST /api/unlock {pin}` -> `{token}` (send as `X-Parent-Token`) | `POST /api/settings`, `POST /api/companion {name,persona,emoji,color}`, `GET /api/summaries` (token required) | `POST /api/chat {text,wind_down}` -> `{reply,mission,topic,safety_flag,learning_note,turn}` | `POST /api/end {minutes}` -> summary JSON | `POST /api/reset` | `GET /api/proof`.
+`GET /api/settings` (no PIN fields) | `POST /api/unlock {pin}` -> `{token}` (send as `X-Parent-Token`) | `POST /api/settings`, `POST /api/companion {name,persona,emoji,color}`, `GET /api/summaries`, `GET /api/live` (token required) | `GET /api/tasks`, `POST /api/tasks {title,emoji,xp,by}` (`by:"parent"` needs token), `POST /api/tasks/done {id}`, `POST /api/react {emoji}` | `POST /api/chat {text,wind_down}` -> `{reply,mission,topic,safety_flag,learning_note,turn}` | `POST /api/end {minutes}` -> summary JSON | `POST /api/reset` | `GET /api/proof`.
 
 ## Safety and privacy principles (COPPA-style, not a compliance claim)
 No personal information collected or requested (prompt forbids names, addresses, schools, phones, photos); parent controls time, topics and goal; no dark patterns (no streaks, no "keep chatting", the session ends itself); flags are shown to the parent; sample data only; nothing leaves the machine except the prompts sent to OpenRouter. Known limits: the keyword filter is a floor, not a guarantee; the PIN has no attempt rate-limit; the model can still err.
