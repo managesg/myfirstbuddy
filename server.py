@@ -119,6 +119,21 @@ def end(minutes):
     sums = rj("data/summaries.json", []); sums.append(s); wj("data/summaries.json", sums)
     return s
 
+# --- kid play-pad state (additive): mission board, XP, emoji reactions ---
+STARTER = [{"id": "s1", "title": "Draw Pip and show a grown-up", "emoji": "🎨", "xp": 15, "by": "starter", "done": False}]
+def tasks():
+    t, notes = rj("data/tasks.json", STARTER), rj("data/notes.json", [])
+    return {"tasks": t, "xp": sum(x["xp"] for x in t if x.get("done")) + 5 * sum(1 for n in notes if not n.get("flag")),
+            "reactions": rj("data/reactions.json", [])[-5:]}
+def add_task(d, parent):
+    title = str(d.get("title", "")).strip()[:80]
+    if not title: raise ValueError("title required")
+    t = rj("data/tasks.json", STARTER)
+    if not parent and any(x["title"] == title for x in t): return tasks()  # buddy mission already on the board
+    t.append({"id": "t%d" % (time.time() * 1000), "title": title, "emoji": str(d.get("emoji", "⭐"))[:4],
+              "xp": min(50, max(5, int(d.get("xp", 20)))) if parent else 10, "by": "parent" if parent else "buddy", "done": False})
+    wj("data/tasks.json", t); return tasks()
+
 def proof():
     lp = P("proof", "openrouter_log.jsonl")
     log = [json.loads(l) for l in open(lp, encoding="utf-8")] if os.path.exists(lp) else []
@@ -137,6 +152,10 @@ class H(BaseHTTPRequestHandler):
         if self.path == "/api/summaries":
             if not self.authed(): return self.send({"error": "parent PIN required"}, 401)
             return self.send({"summaries": rj("data/summaries.json", []), "notes": rj("data/notes.json", [])})
+        if self.path == "/api/tasks": return self.send(tasks())
+        if self.path == "/api/live":
+            if not self.authed(): return self.send({"error": "parent PIN required"}, 401)
+            return self.send(dict(tasks(), session=rj("data/session.json", []), notes=rj("data/notes.json", []), summaries=rj("data/summaries.json", [])))
         self.send({"error": "nf"}, 404)
     def do_POST(self):
         d = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
@@ -151,7 +170,17 @@ class H(BaseHTTPRequestHandler):
             if self.path == "/api/settings":
                 old = rj("data/settings.json", {}); d.update({k: v for k, v in old.items() if k.startswith("pin_")}); wj("data/settings.json", d)
                 return self.send({k: v for k, v in d.items() if not k.startswith("pin_")})
-            if self.path == "/api/reset": wj("data/session.json", []); wj("data/notes.json", []); return self.send({"ok": 1})
+            if self.path == "/api/reset": wj("data/session.json", []); wj("data/notes.json", []); wj("data/tasks.json", STARTER); wj("data/reactions.json", []); return self.send({"ok": 1})
+            if self.path == "/api/tasks":
+                if d.get("by") == "parent" and not self.authed(): return self.send({"error": "parent PIN required"}, 401)
+                return self.send(add_task(d, d.get("by") == "parent"))
+            if self.path == "/api/tasks/done":
+                t = rj("data/tasks.json", STARTER)
+                for x in t:
+                    if x["id"] == d.get("id"): x["done"] = bool(d.get("done", True))
+                wj("data/tasks.json", t); return self.send(tasks())
+            if self.path == "/api/react":
+                r = rj("data/reactions.json", []); r.append({"ts": time.time(), "emoji": str(d.get("emoji", ""))[:4]}); wj("data/reactions.json", r[-50:]); return self.send({"ok": 1})
             if self.path == "/api/chat": return self.send(chat(d["text"], bool(d.get("wind_down"))))
             if self.path == "/api/end": return self.send(end(d.get("minutes", 0)))
         except Exception as e: return self.send({"error": str(e)}, 500)
@@ -165,6 +194,8 @@ def selftest():
     try: guard(CAP); raise SystemExit("guard did not trip")
     except RuntimeError: pass
     assert pin_hash("a", "2468") != pin_hash("b", "2468")
+    try: add_task({"title": " "}, True); raise SystemExit("empty task accepted")
+    except ValueError: pass
     print("selftest ok")
 
 if __name__ == "__main__":
