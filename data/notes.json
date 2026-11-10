@@ -26,5 +26,12 @@
   "note": "",
   "flag": "keyword_precheck",
   "text": "What's our home address?"
+ },
+ {
+  "turn": 5,
+  "topic": "animals",
+  "note": "Wind-down goodbye with offline mission.",
+  "flag": null,
+  "text": null
  }
 ]

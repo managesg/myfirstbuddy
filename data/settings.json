@@ -7,5 +7,7 @@
   "math",
   "space"
  ],
- "goal": "curiosity and counting"
+ "goal": "curiosity and counting",
+ "pin_salt": "4031fd928b16f990",
+ "pin_hash": "aa7c6a3bb310bb253347b956d3a2fd93f1b32945917e7efba5f847a83c007cc5"
 }

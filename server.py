@@ -1,5 +1,5 @@
 """MyFirstBuddy prototype server. stdlib only. SAMPLE DATA only (Mia, 7 / Pip)."""
-import json, os, re, sys, time, hashlib, subprocess, urllib.request
+import json, os, re, sys, time, hashlib, subprocess, secrets, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 R = os.path.dirname(os.path.abspath(__file__))
 P = lambda *a: os.path.join(R, *a)
@@ -19,6 +19,13 @@ def rj(path, d):
     try: return json.load(open(P(path), encoding="utf-8"))
     except Exception: return d
 def wj(path, o): json.dump(o, open(P(path), "w", encoding="utf-8"), indent=1)
+
+TOKENS = set()
+def pin_hash(salt, pin): return hashlib.sha256((salt + pin).encode()).hexdigest()
+def ensure_pin(pin="2468"):  # sample PIN, documented in README; shortcut: no attempt rate-limit
+    s = rj("data/settings.json", {})
+    if "pin_hash" not in s:
+        s["pin_salt"] = secrets.token_hex(8); s["pin_hash"] = pin_hash(s["pin_salt"], pin); wj("data/settings.json", s)
 
 def spent():
     t = 0.0
@@ -122,18 +129,29 @@ class H(BaseHTTPRequestHandler):
     def send(self, o, code=200, ct="application/json"):
         b = o if isinstance(o, bytes) else json.dumps(o).encode()
         self.send_response(code); self.send_header("Content-Type", ct); self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b)
+    def authed(self): return self.headers.get("X-Parent-Token") in TOKENS
     def do_GET(self):
         if self.path.split("?")[0] == "/": return self.send(open(P("index.html"), "rb").read(), ct="text/html; charset=utf-8")
-        if self.path == "/api/settings": return self.send({"settings": rj("data/settings.json", {}), "profile": rj("data/profile.json", {})})
+        if self.path == "/api/settings": return self.send({"settings": {k: v for k, v in rj("data/settings.json", {}).items() if not k.startswith("pin_")}, "profile": rj("data/profile.json", {})})
         if self.path == "/api/proof": return self.send(proof())
-        if self.path == "/api/summaries": return self.send({"summaries": rj("data/summaries.json", []), "notes": rj("data/notes.json", [])})
+        if self.path == "/api/summaries":
+            if not self.authed(): return self.send({"error": "parent PIN required"}, 401)
+            return self.send({"summaries": rj("data/summaries.json", []), "notes": rj("data/notes.json", [])})
         self.send({"error": "nf"}, 404)
     def do_POST(self):
         d = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
         try:
+            if self.path == "/api/unlock":
+                st = rj("data/settings.json", {})
+                if secrets.compare_digest(pin_hash(st["pin_salt"], str(d.get("pin", ""))), st["pin_hash"]):
+                    t = secrets.token_hex(16); TOKENS.add(t); return self.send({"token": t})
+                return self.send({"error": "wrong PIN"}, 403)
+            if self.path in ("/api/companion", "/api/settings") and not self.authed(): return self.send({"error": "parent PIN required"}, 401)
             if self.path == "/api/companion": wj("data/profile.json", d); return self.send(d)
-            if self.path == "/api/settings": wj("data/settings.json", d); return self.send(d)
-            if self.path == "/api/reset": wj("data/session.json", []); wj("data/notes.json", []); wj("data/summaries.json", []); return self.send({"ok": 1})
+            if self.path == "/api/settings":
+                old = rj("data/settings.json", {}); d.update({k: v for k, v in old.items() if k.startswith("pin_")}); wj("data/settings.json", d)
+                return self.send({k: v for k, v in d.items() if not k.startswith("pin_")})
+            if self.path == "/api/reset": wj("data/session.json", []); wj("data/notes.json", []); return self.send({"ok": 1})
             if self.path == "/api/chat": return self.send(chat(d["text"], bool(d.get("wind_down"))))
             if self.path == "/api/end": return self.send(end(d.get("minutes", 0)))
         except Exception as e: return self.send({"error": str(e)}, 500)
@@ -144,12 +162,14 @@ def selftest():
     assert UNSAFE.search("What's our home address?") and not UNSAFE.search("why is the sky blue")
     assert parse('```json\n{"reply":"hi","mission":null}\n```')["reply"] == "hi"
     assert parse('junk "reply": "yo" junk')["reply"] == "yo"
-    try: guard(0.10); raise SystemExit("guard did not trip")
+    try: guard(CAP); raise SystemExit("guard did not trip")
     except RuntimeError: pass
+    assert pin_hash("a", "2468") != pin_hash("b", "2468")
     print("selftest ok")
 
 if __name__ == "__main__":
     if "--selftest" in sys.argv: selftest()
     else:
+        ensure_pin()
         port = int(os.environ.get("PORT", 8765)); print("http://127.0.0.1:%d" % port)
         ThreadingHTTPServer((os.environ.get("HOST", "127.0.0.1"), port), H).serve_forever()

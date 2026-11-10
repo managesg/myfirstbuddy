@@ -8,7 +8,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(channel="chrome")
     kw = dict(viewport={"width": 1000, "height": 720})
     if mode == "video": kw.update(record_video_dir="demo/_tmp", record_video_size={"width": 1000, "height": 720})
-    c = b.new_context(**kw); pg = c.new_page()
+    c = b.new_context(**kw); pg = c.new_page(); pg.on("dialog", lambda d: d.accept("2468"))
     pg.goto("http://127.0.0.1:8765/?secs=%d" % secs)
     # parent sets things (2 min, 5-7, animals/math/space)
     pg.click(".tab[data-t=parent]"); pg.wait_for_timeout(1500 if mode == "video" else 200)

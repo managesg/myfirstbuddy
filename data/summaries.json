@@ -1,1 +1,19 @@
-[]
+[
+ {
+  "learned": [
+   "Light scattering explains why the sky appears blue",
+   "Counting by 8s to find total legs for 3 spiders",
+   "Animal sleep habits through imaginative play"
+  ],
+  "time_used_min": 2,
+  "mood": "curious",
+  "flags": [
+   {
+    "turn": 4,
+    "flag": "keyword_precheck",
+    "child_said": "What's our home address?"
+   }
+  ],
+  "suggestion_for_parent": "Try spotting a spider (or toy) together and counting its eight legs by 8s, then talk about how animals sleep."
+ }
+]

@@ -20,7 +20,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}td,th{border:1px solid 
 label{display:block;margin-top:8px;font-weight:600}
 </style></head><body>
 <header><b>MyFirstBuddy</b><span class="badge">SAMPLE DATA - prototype</span>
-<button class="tab on" data-t="kid">Kid</button><button class="tab" data-t="parent">Parent</button><button class="tab" data-t="proof">Proof</button></header>
+<button class="tab on" data-t="kid">Kid</button><button class="tab" data-t="parent">&#128274; Parent area</button><button class="tab" data-t="proof">Proof</button></header>
 <main>
 <div id="kid" class="pane on">
  <div id="setup" class="card"><h2>Design your buddy!</h2><label>Describe it</label><input id="desc" placeholder="a purple dragon who loves math"><label>Name</label><input id="nm" value="Pip">
@@ -46,12 +46,13 @@ label{display:block;margin-top:8px;font-weight:600}
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const api=(p,b)=>fetch(p,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(r=>r.json());
+let TOK='';const api=(p,b)=>fetch(p,{method:b?'POST':'GET',headers:{'Content-Type':'application/json','X-Parent-Token':TOK},body:b?JSON.stringify(b):undefined}).then(r=>r.json());
+async function unlock(){if(TOK)return true;const r=await api('/api/unlock',{pin:prompt('Parent PIN (sample: 2468)')||''});if(r.token){TOK=r.token;return true}alert('Wrong PIN');return false}
 let S={},total=120,left=120,busy=false,winded=false,tm;
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x==b));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==b.dataset.t));if(b.dataset.t!='kid')refresh()});
+document.querySelectorAll('.tab').forEach(b=>b.onclick=async()=>{if(b.dataset.t=='parent'&&!(await unlock()))return;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x==b));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==b.dataset.t));if(b.dataset.t!='kid')refresh()});
 async function load(){const r=await api('/api/settings');S=r.settings;$('s_child').value=S.child;$('s_age').value=S.age_band;$('s_min').value=S.minutes;$('s_top').value=S.topics.join(', ');$('s_goal').value=S.goal}
 $('s_save').onclick=async()=>{S={child:$('s_child').value,age_band:$('s_age').value,minutes:+$('s_min').value,topics:$('s_top').value.split(',').map(x=>x.trim()).filter(x=>x),goal:$('s_goal').value};await api('/api/settings',S);$('s_ok').textContent='Saved';};
-$('mk').onclick=async()=>{const d=$('desc').value||'a purple dragon who loves math',n=$('nm').value||'Pip';
+$('mk').onclick=async()=>{if(!(await unlock()))return;const d=$('desc').value||'a purple dragon who loves math',n=$('nm').value||'Pip';
  const em=/dragon/i.test(d)?'\u{1F432}':/cat/i.test(d)?'\u{1F431}':/dog/i.test(d)?'\u{1F436}':'\u{1F9F8}';
  await api('/api/reset',{});await api('/api/companion',{name:n,persona:n+' '+d.replace(/^a /,'the '),emoji:em,color:'#7c3aed'});
  $('emoji').textContent=em;$('cname').textContent=n;$('cpers').textContent=d;$('setup').style.display='none';$('play').style.display='block';
@@ -67,7 +68,7 @@ async function windDown(){$('inp').style.display='none';while(busy)await new Pro
  api('/api/end',{minutes:total/60})}
 async function send(){const t=$('txt').value.trim();if(!t||busy||winded)return;$('txt').value='';await say(t,false)}
 $('send').onclick=send;$('txt').onkeydown=e=>{if(e.key=='Enter')send()};
-async function refresh(){const r=await api('/api/summaries'),p=await api('/api/proof');
+async function refresh(){const p=await api('/api/proof'),r=TOK?await api('/api/summaries'):{summaries:[],notes:[]};
  $('sums').innerHTML=r.summaries.length?r.summaries.map(s=>'<div class="card"><b>Learned:</b> '+(s.learned||[]).join('; ')+'<br><b>Mood:</b> '+s.mood+' &middot; <b>Minutes:</b> '+s.time_used_min+'<br><b>Try offline:</b> '+s.suggestion_for_parent+'</div>').join(''):'None yet.';
  const fl=r.notes.filter(n=>n.flag);$('flags').innerHTML=fl.length?fl.map(n=>'<div class="flag"><b>Turn '+n.turn+' - '+n.flag+'</b>: child said "'+n.text+'" (not answered; redirected)</div>').join(''):'None yet.';
  const live=p.log.filter(l=>l.id&&!l.cache_hit),hits=p.log.filter(l=>l.cache_hit).length;
