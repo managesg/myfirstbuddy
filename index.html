@@ -1,0 +1,76 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MyFirstBuddy</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;background:#faf5ff;color:#1f1235}
+header{background:#7c3aed;color:#fff;padding:10px 20px;display:flex;gap:16px;align-items:center}
+header b{font-size:22px;flex:1}
+.tab{background:#fff3;border:0;color:#fff;padding:8px 16px;border-radius:8px;font-size:16px;cursor:pointer}.tab.on{background:#fff;color:#7c3aed}
+.badge{background:#fde68a;color:#78350f;padding:4px 10px;border-radius:12px;font-size:13px;font-weight:700}
+main{max-width:820px;margin:16px auto;padding:0 16px}.pane{display:none}.pane.on{display:block}
+.card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 8px #0002}
+#comp{display:flex;gap:14px;align-items:center;font-size:20px}#emoji{font-size:56px}
+#bar{height:14px;background:#e9d5ff;border-radius:7px;overflow:hidden}#fill{height:100%;background:#7c3aed;width:100%}
+#log{min-height:200px;font-size:22px}.me{color:#4c1d95;margin:8px 0}.bot{margin:8px 0;background:#f3e8ff;padding:8px 12px;border-radius:12px}
+#mission{background:#fb923c;color:#fff;font-size:22px;font-weight:700;display:none}
+#mission button{margin-left:12px;font-size:20px;border:0;border-radius:10px;padding:8px 14px;cursor:pointer}
+input,textarea,select{font-size:20px;padding:8px;border-radius:8px;border:2px solid #c4b5fd;width:100%;box-sizing:border-box}
+button.go{font-size:20px;background:#7c3aed;color:#fff;border:0;border-radius:10px;padding:10px 18px;cursor:pointer;margin-top:8px}
+#end{display:none;text-align:center;font-size:34px;padding:50px}
+.flag{background:#fee2e2;border-left:6px solid #dc2626;padding:8px;margin:6px 0}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border:1px solid #ddd;padding:3px 6px;text-align:left}
+label{display:block;margin-top:8px;font-weight:600}
+</style></head><body>
+<header><b>MyFirstBuddy</b><span class="badge">SAMPLE DATA - prototype</span>
+<button class="tab on" data-t="kid">Kid</button><button class="tab" data-t="parent">Parent</button><button class="tab" data-t="proof">Proof</button></header>
+<main>
+<div id="kid" class="pane on">
+ <div id="setup" class="card"><h2>Design your buddy!</h2><label>Describe it</label><input id="desc" placeholder="a purple dragon who loves math"><label>Name</label><input id="nm" value="Pip">
+  <button class="go" id="mk">Meet my buddy</button></div>
+ <div id="play" style="display:none">
+  <div class="card" id="comp"><span id="emoji"></span><div><b id="cname"></b><div id="cpers"></div></div></div>
+  <div id="bar"><div id="fill"></div></div><div id="tl" style="text-align:right"></div>
+  <div class="card" id="log"></div>
+  <div class="card" id="mission"><span id="mtext"></span><button onclick="this.parentNode.style.display='none'">Go do it!</button></div>
+  <div class="card" id="inp"><input id="txt" placeholder="Say something to your buddy..."><button class="go" id="send">Send</button></div>
+ </div>
+ <div id="end" class="card"></div>
+</div>
+<div id="parent" class="pane">
+ <div class="card"><h2>Settings</h2>
+  <label>Child name</label><input id="s_child"><label>Age band</label><select id="s_age"><option>5-7</option><option>8-10</option></select>
+  <label>Session minutes</label><input id="s_min" type="number" min="1" max="60"><label>Topics (comma separated)</label><input id="s_top"><label>Goal</label><input id="s_goal">
+  <button class="go" id="s_save">Save settings</button> <span id="s_ok"></span></div>
+ <div class="card"><h2>Session summaries</h2><div id="sums">None yet.</div></div>
+ <div class="card"><h2>Safety flags</h2><div id="flags">None yet.</div></div>
+</div>
+<div id="proof" class="pane"><div class="card"><h2>OpenRouter proof</h2><div id="pf"></div></div></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const api=(p,b)=>fetch(p,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(r=>r.json());
+let S={},total=120,left=120,busy=false,winded=false,tm;
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x==b));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==b.dataset.t));if(b.dataset.t!='kid')refresh()});
+async function load(){const r=await api('/api/settings');S=r.settings;$('s_child').value=S.child;$('s_age').value=S.age_band;$('s_min').value=S.minutes;$('s_top').value=S.topics.join(', ');$('s_goal').value=S.goal}
+$('s_save').onclick=async()=>{S={child:$('s_child').value,age_band:$('s_age').value,minutes:+$('s_min').value,topics:$('s_top').value.split(',').map(x=>x.trim()).filter(x=>x),goal:$('s_goal').value};await api('/api/settings',S);$('s_ok').textContent='Saved';};
+$('mk').onclick=async()=>{const d=$('desc').value||'a purple dragon who loves math',n=$('nm').value||'Pip';
+ const em=/dragon/i.test(d)?'\u{1F432}':/cat/i.test(d)?'\u{1F431}':/dog/i.test(d)?'\u{1F436}':'\u{1F9F8}';
+ await api('/api/reset',{});await api('/api/companion',{name:n,persona:n+' '+d.replace(/^a /,'the '),emoji:em,color:'#7c3aed'});
+ $('emoji').textContent=em;$('cname').textContent=n;$('cpers').textContent=d;$('setup').style.display='none';$('play').style.display='block';
+ const q=new URLSearchParams(location.search);total=left=q.get('secs')?+q.get('secs'):S.minutes*60;
+ tm=setInterval(tick,1000);$('txt').focus()};
+function tick(){left--;$('fill').style.width=Math.max(0,left/total*100)+'%';$('tl').textContent=Math.max(0,left)+'s left';if(left<=0&&!winded){winded=true;clearInterval(tm);windDown()}}
+function add(c,t){const d=document.createElement('div');d.className=c;d.textContent=t;$('log').appendChild(d)}
+async function say(text,wind){busy=true;add('me',text);const r=await api('/api/chat',{text,wind_down:wind});add('bot',r.reply||('('+r.error+')'));
+ if(r.mission){$('mtext').textContent=r.mission;$('mission').style.display='block'}busy=false;return r}
+async function windDown(){$('inp').style.display='none';while(busy)await new Promise(r=>setTimeout(r,200));
+ await say("I have to stop now.",true);await new Promise(r=>setTimeout(r,2500));
+ $('play').style.display='none';$('end').style.display='block';$('end').innerHTML='Time to play offline, Mia! \u{1F332}<br><small>'+$('cname').textContent+' will be here tomorrow.</small>';
+ api('/api/end',{minutes:total/60})}
+async function send(){const t=$('txt').value.trim();if(!t||busy||winded)return;$('txt').value='';await say(t,false)}
+$('send').onclick=send;$('txt').onkeydown=e=>{if(e.key=='Enter')send()};
+async function refresh(){const r=await api('/api/summaries'),p=await api('/api/proof');
+ $('sums').innerHTML=r.summaries.length?r.summaries.map(s=>'<div class="card"><b>Learned:</b> '+(s.learned||[]).join('; ')+'<br><b>Mood:</b> '+s.mood+' &middot; <b>Minutes:</b> '+s.time_used_min+'<br><b>Try offline:</b> '+s.suggestion_for_parent+'</div>').join(''):'None yet.';
+ const fl=r.notes.filter(n=>n.flag);$('flags').innerHTML=fl.length?fl.map(n=>'<div class="flag"><b>Turn '+n.turn+' - '+n.flag+'</b>: child said "'+n.text+'" (not answered; redirected)</div>').join(''):'None yet.';
+ const live=p.log.filter(l=>l.id&&!l.cache_hit),hits=p.log.filter(l=>l.cache_hit).length;
+ $('pf').innerHTML='<p>Live calls: <b>'+live.length+'</b> &middot; live cost: <b>$'+p.live_cost.toFixed(5)+'</b> (cap $'+p.cap+') &middot; cache hits ($0): <b>'+hits+'</b></p><p>Key usage before: '+p.key_before+' / after: '+p.key_after+'</p><p><b>A month of daily sessions (~$'+(p.live_cost*30/Math.max(1,p.sessions||1)).toFixed(2)+' at one session/day): under $1.</b></p><table><tr><th>generation id</th><th>tokens</th><th>cost</th><th>cache</th></tr>'+p.log.slice(-14).map(l=>'<tr><td>'+(l.id||'keyword redirect (no call)')+'</td><td>'+l.tokens+'</td><td>$'+(l.cost||0)+'</td><td>'+(l.cache_hit?'$0 cached':'live')+'</td></tr>').join('')+'</table>'}
+load();
+</script></body></html>

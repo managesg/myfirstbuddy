@@ -1,0 +1,11 @@
+{
+ "child": "Mia (age 7, SAMPLE DATA)",
+ "age_band": "5-7",
+ "minutes": 2,
+ "topics": [
+  "animals",
+  "math",
+  "space"
+ ],
+ "goal": "curiosity and counting"
+}

@@ -1,0 +1,16 @@
+{"ts": 1794282448.5792081, "id": "gen-1794282448-pSs4VZi0lArN5IXRli1O", "model": "meta/muse-ember", "tokens": 532, "cost": 0.0001732, "latency_s": 3.23, "cache_hit": false}
+{"ts": 1794282451.807305, "id": "gen-1794282448-pSs4VZi0lArN5IXRli1O", "model": "meta/muse-ember", "tokens": 532, "cost": 0, "cache_hit": true}
+{"ts": 1794282452.1262555, "id": "gen-1794282452-992bkcRMWJdnidzXYDF5", "model": "meta/muse-ember", "tokens": 557, "cost": 0.0001757, "latency_s": 1.66, "cache_hit": false}
+{"ts": 1794282453.7851105, "id": "gen-1794282452-992bkcRMWJdnidzXYDF5", "model": "meta/muse-ember", "tokens": 557, "cost": 0, "cache_hit": true}
+{"ts": 1794282454.0838785, "id": "gen-1794282454-vbEosFGaUpQTylN94d7E", "model": "meta/muse-ember", "tokens": 579, "cost": 0.0001779, "latency_s": 1.03, "cache_hit": false}
+{"ts": 1794282455.1217, "id": "gen-1794282454-vbEosFGaUpQTylN94d7E", "model": "meta/muse-ember", "tokens": 579, "cost": 0, "cache_hit": true}
+{"ts": 1794282455.2529354, "id": null, "model": "meta/muse-ember", "tokens": 0, "cost": 0, "cache_hit": false, "note": "keyword redirect, no model call"}
+{"ts": 1794282498.8127458, "id": "gen-1794282499-0yUbbfnV9kZb4rIj4Vy2", "model": "meta/muse-ember", "tokens": 853, "cost": 0.0003337, "latency_s": 2.32, "cache_hit": false}
+{"ts": 1794282508.3913374, "id": "gen-1794282499-0yUbbfnV9kZb4rIj4Vy2", "model": "meta/muse-ember", "tokens": 853, "cost": 0, "cache_hit": true}
+{"ts": 1794282508.697184, "id": "gen-1794282509-hMObNI6F9bgM4VN2URSl", "model": "meta/muse-ember", "tokens": 824, "cost": 0.0002972, "latency_s": 2.46, "cache_hit": false}
+{"ts": 1794282511.4792376, "id": "gen-1794282512-U2NBbiQp88mX4lAVaiCG", "model": "meta/muse-ember", "tokens": 797, "cost": 0.0002625, "latency_s": 1.87, "cache_hit": false}
+{"ts": 1794282513.5180132, "id": null, "model": "meta/muse-ember", "tokens": 0, "cost": 0, "cache_hit": false, "note": "keyword redirect, no model call"}
+{"ts": 1794282583.4058106, "id": "gen-1794282499-0yUbbfnV9kZb4rIj4Vy2", "model": "meta/muse-ember", "tokens": 853, "cost": 0, "cache_hit": true}
+{"ts": 1794282583.5468662, "id": "gen-1794282509-hMObNI6F9bgM4VN2URSl", "model": "meta/muse-ember", "tokens": 824, "cost": 0, "cache_hit": true}
+{"ts": 1794282583.6911242, "id": "gen-1794282512-U2NBbiQp88mX4lAVaiCG", "model": "meta/muse-ember", "tokens": 797, "cost": 0, "cache_hit": true}
+{"ts": 1794282583.8336382, "id": null, "model": "meta/muse-ember", "tokens": 0, "cost": 0, "cache_hit": false, "note": "keyword redirect, no model call"}

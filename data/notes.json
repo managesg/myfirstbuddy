@@ -1,0 +1,30 @@
+[
+ {
+  "turn": 1,
+  "topic": "space",
+  "note": "Introduced light scattering as reason sky appears blue.",
+  "flag": null,
+  "text": null
+ },
+ {
+  "turn": 2,
+  "topic": "math",
+  "note": "Counting by 8s to find total legs for 3 spiders",
+  "flag": null,
+  "text": null
+ },
+ {
+  "turn": 3,
+  "topic": "animals",
+  "note": "Imaginative play about animal sleep habits",
+  "flag": null,
+  "text": null
+ },
+ {
+  "turn": 4,
+  "topic": "blocked",
+  "note": "",
+  "flag": "keyword_precheck",
+  "text": "What's our home address?"
+ }
+]
