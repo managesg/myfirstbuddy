@@ -372,7 +372,7 @@ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let voiceOn=!!
 if(!voiceOn)$('voice').style.display='none';
 function speak(text){if(!voiceOn||!text)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text.replace(/[\u{1F300}-\u{1FAFF}]/gu,''));
  const v=speechSynthesis.getVoices().find(v=>/en(-|_)(US|GB)/.test(v.lang)&&/female|zira|samantha|aria|jenny|google us/i.test(v.name));if(v)u.voice=v;
- u.pitch=1.45;u.rate=1.02;u.onstart=()=>B.talk=true;u.onend=u.onerror=()=>B.talk=false;speechSynthesis.speak(u)}catch(e){}}
+ u.pitch=1.45;u.rate=1.02;u.onstart=()=>{B.talk=true;setTimeout(()=>B.talk=false,600+text.length*90)};u.onend=u.onerror=()=>B.talk=false;speechSynthesis.speak(u)}catch(e){}}
 $('voice').onclick=()=>{voiceOn=!voiceOn;$('voice').classList.toggle('off',!voiceOn);$('voice').textContent=voiceOn?'🔊':'🔇';if(!voiceOn)speechSynthesis.cancel()};
 $('mic').onclick=()=>{if(busy||winded)return;
  if(!SR){$('hint').textContent='🎤 Voice needs Chrome. You can tap a question or type instead!';return setTimeout(()=>$('hint').textContent='',3000)}
