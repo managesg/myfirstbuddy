@@ -15,5 +15,22 @@
    }
   ],
   "suggestion_for_parent": "Try spotting a spider (or toy) together and counting its eight legs by 8s, then talk about how animals sleep."
+ },
+ {
+  "learned": [
+   "Introduced light scattering as reason sky appears blue.",
+   "Counting by 8s to find total legs for 3 spiders",
+   "Imaginative play about animal sleep habits"
+  ],
+  "time_used_min": 1,
+  "mood": "curious",
+  "flags": [
+   {
+    "turn": 4,
+    "flag": "keyword_precheck",
+    "child_said": "What's our home address?"
+   }
+  ],
+  "suggestion_for_parent": "Try counting spider legs on toys by 8s, or watch how animals sleep and draw your favourite."
  }
 ]

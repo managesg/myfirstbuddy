@@ -33,9 +33,9 @@ No personal information collected or requested (prompt forbids names, addresses,
 | Item | Value |
 |---|---|
 | Model | meta/muse-ember via OpenRouter |
-| Live model calls logged | 9 (3 early calls hit the 300-token cap because the model spends tokens on reasoning, content was empty; fixed with max_tokens 1200 and low reasoning effort) |
-| Cost of those calls (from `usage.cost`) | $0.002576 total; about $0.0003 per turn |
-| Cache hits (replays, $0) | 11 at time of writing, see `proof/openrouter_log.jsonl` |
+| Live model calls logged | 10 (3 early calls hit the 300-token cap because the model spends tokens on reasoning, content was empty; fixed with max_tokens 1200 and low reasoning effort) |
+| Cost of those calls (from `usage.cost`) | $0.002920 total; about $0.0003 per turn |
+| Cache hits (replays, $0) | 15 at time of writing, see `proof/openrouter_log.jsonl` |
 | Avg live latency | 2.2 s |
 | `/api/v1/key` usage before / after | 0.105585 / 0.118671 (delta $0.0131; larger than the log because the same key was also used by other hackathon work during the window) |
 | Budget guard | server refuses live calls once logged spend reaches $0.40 |
